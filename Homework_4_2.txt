@@ -1,0 +1,46 @@
+1. Создание таблицы-фактов:
+CREATE TABLE sales_fact
+(
+    sale_id SERIAL,
+    product_id INT,
+    time_id DATE,
+    amount DECIMAL,
+    segment_id INT
+)
+DISTRIBUTED BY (segment_id)
+PARTITION BY RANGE (time_id) 
+(
+    START (DATE '2022-01-01') INCLUSIVE
+    END (DATE '2023-01-01') EXCLUSIVE EVERY (INTERVAL '1 month')
+)
+
+
+2. Создание таблицы-измерений:
+CREATE TABLE product_dimension
+(
+    product_id INT PRIMARY KEY,
+    product_name TEXT,
+    price DECIMAL
+);
+
+
+3. Заполнение таблиц данными:
+INSERT INTO sales_fact (product_id, time_id, amount, segment_id) VALUES (1, '2022-01-01', 100, 1);
+INSERT INTO product_dimension (product_id, product_name, price) VALUES (1, 'Product A', 50);
+
+
+4. Запрос для рассчета суммы продаж определенного товара за определенную единицу времени:
+SELECT p.product_name, SUM(s.amount) AS total_sales
+FROM sales_fact s
+JOIN product_dimension p ON s.product_id = p.product_id
+WHERE s.time_id BETWEEN '2022-01-01' AND '2022-12-31'
+AND p.product_id = 1
+GROUP BY p.product_name;
+
+5. Вывода плана выполнения запроса с использованием команды EXPLAIN:
+EXPLAIN SELECT p.product_name, SUM(s.amount) AS total_sales
+FROM sales_fact s
+JOIN product_dimension p ON s.product_id = p.product_id
+WHERE s.time_id BETWEEN '2022-01-01' AND '2022-12-31'
+AND p.product_id = 1
+GROUP BY p.product_name;
